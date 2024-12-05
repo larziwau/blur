@@ -1,8 +1,7 @@
 from vapoursynth import core
 import vapoursynth as vs
 
-# https://github.com/couleur-tweak-tips/smoothie-rs/blob/main/target/scripts/blending.py
-def average(clip: vs.VideoNode, weights: list[float], divisor: float | None = None):
+def average(clip: vs.VideoNode, weights: list[float], divisor: float | None = None) -> vs.VideoNode:
     def get_offset_clip(offset: int) -> vs.VideoNode:
         if offset > 0:
             return clip[0] * offset + clip[:-offset]
@@ -22,16 +21,14 @@ def average(clip: vs.VideoNode, weights: list[float], divisor: float | None = No
     clips = [get_offset_clip(offset) for offset in range(-radius, radius + 1)]
 
     expr = ""
-    # expr_vars = "xyzabcdefghijklmnopqrstuvw"
-    expr_vars = []
-    for i in range(0, 1024): expr_vars += [f"src{i}"]
+    expr_vars = [f"src{i}" for i in range(1024)]
 
     for var, weight in zip(expr_vars[:diameter], weights):
         expr += f"{var} {weight} * "
 
     expr += "+ " * (diameter - 1)
     expr += f"{divisor} /" if divisor != 1 else ""
-    # https://github.com/AkarinVS/vapoursynth-plugin
+
     clip = core.akarin.Expr(clips, expr)
 
     return clip
