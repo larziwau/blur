@@ -1,14 +1,10 @@
-# credit to InterFrame - https://www.spirton.com/uploads/InterFrame/InterFrame2.html and https://github.com/HomeOfVapourSynthEvolution/havsfunc
-
 import vapoursynth as vs
 from vapoursynth import core
-
 import json
 import math
 
 LEGACY_PRESETS = ["weak", "film", "smooth", "animation"]
 NEW_PRESETS = ["default", "test"]
-
 
 def generate_svp_strings(
     new_fps,
@@ -18,15 +14,13 @@ def generate_svp_strings(
     overlap=2,
     speed="medium",
     masking=50,
-    gpu=True,
+    gpu=True
 ):
-    # build super json
     super_json = {
         "pel": 1,
         "gpu": gpu,
     }
 
-    # build vectors json
     vectors_json = {
         "block": {
             "w": blocksize,
@@ -51,23 +45,21 @@ def generate_svp_strings(
             else:
                 vectors_json["main"]["search"]["coarse"] = {"distance": -10}
 
-    # build smooth json
     smooth_json = {
         "rate": {"num": int(new_fps), "abs": True},
         "algo": algorithm,
         "mask": {
             "area": masking,
-            "area_sharp": 1.2,  # test if this does anything
+            "area_sharp": 1.2,
         },
         "scene": {
             "blend": False,
             "mode": 0,
-            "limits": {"blocks": 9999999},  # dont want any scene detection stuff
+            "limits": {"blocks": 9999999},
         },
     }
 
     return [json.dumps(obj) for obj in [super_json, vectors_json, smooth_json]]
-
 
 def interpolate_svp(
     video,
@@ -78,7 +70,7 @@ def interpolate_svp(
     overlap=2,
     speed="medium",
     masking=50,
-    gpu=True,
+    gpu=True
 ):
     if not isinstance(video, vs.VideoNode):
         raise vs.Error("interpolate: input not a video")
@@ -88,12 +80,10 @@ def interpolate_svp(
     if preset not in LEGACY_PRESETS and preset not in NEW_PRESETS:
         raise vs.Error(f"interpolate: '{preset}' is not a valid preset")
 
-    # generate svp strings
-    [super_string, vectors_string, smooth_string] = generate_svp_strings(
+    super_string, vectors_string, smooth_string = generate_svp_strings(
         new_fps, preset, algorithm, blocksize, overlap, speed, masking, gpu
     )
 
-    # interpolate
     super = core.svp1.Super(video, super_string)
     vectors = core.svp1.Analyse(super["clip"], super["data"], video, vectors_string)
 
@@ -106,8 +96,7 @@ def interpolate_svp(
         smooth_string,
     )
 
-
-def change_fps(clip, fpsnum, fpsden=1):  # this is just directly from havsfunc
+def change_fps(clip, fpsnum, fpsden=1):
     if not isinstance(clip, vs.VideoNode):
         raise vs.Error("ChangeFPS: This is not a clip")
 
@@ -123,7 +112,6 @@ def change_fps(clip, fpsnum, fpsden=1):  # this is just directly from havsfunc
     )
     return attribute_clip.std.FrameEval(eval=frame_adjuster)
 
-
 def interpolate_mvtools(
     clip,
     fps=None,
@@ -136,12 +124,9 @@ def interpolate_mvtools(
     pelsearch=1,
     dct=3,
     blend=False,
-    ml=200,
+    ml=200
 ):
-    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [
-        vs.GRAY,
-        vs.YUV,
-    ]:
+    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [vs.GRAY, vs.YUV]:
         raise TypeError("JohnFPS: This is not a GRAY or YUV clip!")
 
     super = core.mv.Super(
@@ -162,7 +147,6 @@ def interpolate_mvtools(
 
     return core.mv.FlowFPS(clip, super, bv, fv, num=fps, den=1, blend=blend, ml=ml)
 
-
 def JohnBlur(
     clip,
     num=None,
@@ -175,24 +159,8 @@ def JohnBlur(
     blend=False,
     ml=200,
     analyse_args=None,
-    recalculate_args=None,
+    recalculate_args=None
 ):
-    """
-    From: https://forum.doom9.org/showthread.php?p=1847109.
-    Motion Protected FPS converter script by johnmeyer.
-    Slightly modified interface by Manolito, and a smidgen more by ssS.
-    Args:
-        num     (int) - Output framerate numerator.
-        den     (int) - Output framerate denominator.
-        pre    (clip) - pre-filtered clip used in motion vectors calculation.
-        pel     (int) - accuracy of the motion estimation.
-        sharp   (int) - subpixel interpolation method for pel > 1. (sharp = 3 → nnedi3)
-        blksize (int) - blksize used in motion vectors calculation.
-        overlap (int) - overlap used in motion vectors calculation.
-        blend  (bool) - Whether to blend frames at scene change.
-        ml      (int) - mask scale parameter. Greater values correspond to more weak occlusion mask.
-    """
-
     isFLOAT = clip.format.sample_type == vs.FLOAT
     fn_RemoveGrain = core.rgsf.RemoveGrain if isFLOAT else core.rgvs.RemoveGrain
     fn_Analyse = core.mvsf.Analyse if isFLOAT else core.mv.Analyse
@@ -204,10 +172,7 @@ def JohnBlur(
     w = clip.width
     h = clip.height
 
-    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [
-        vs.GRAY,
-        vs.YUV,
-    ]:
+    if not isinstance(clip, vs.VideoNode) or clip.format.color_family not in [vs.GRAY, vs.YUV]:
         raise TypeError("JohnFPS: This is not a GRAY or YUV clip!")
 
     if isinstance(num, float) or isinstance(den, float):
